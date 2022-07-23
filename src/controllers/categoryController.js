@@ -8,7 +8,7 @@ export async function getCategories(req, res) {
         //retorna a tabela categorias
         const { rows: categories } = await connection.query('SELECT * FROM categories');
 
-        res.send(categories).status(200);
+        res.status(200).send(categories);
 
     } catch(error) {
         console.log(error);
@@ -38,7 +38,7 @@ export async function newCategory(req, res){
         );
 
         if(nameExists.rowCount > 0){
-            return res.send('Essa categoria já existe').status(409);
+            return res.status(409).send('Essa categoria já existe');
         }
 
         //insere a categoria no banco de dados

@@ -57,4 +57,34 @@ export async function newGame(req, res){
 
 export async function getGames(req, res){
 
+    try {
+        const filter = req.query.name;
+
+        if(filter){
+            const { rows: games } = await connection.query(`
+                SELECT games.*, categories.name as "categoryName" FROM games
+                JOIN categories
+                ON games."categoryId" = categories.id
+                WHERE games.name
+                ILIKE $1 || '%'`,
+                [filter]
+            );
+        
+            return res.status(201).send(games);
+            
+        } else {
+            const { rows: games } = await connection.query(`
+                SELECT * FROM games
+                JOIN categories
+                ON games."categoryId" = categories.id`
+            );
+        
+            return res.status(201).send(games);
+        }
+
+    } catch(error){
+        console.log(error);
+        res.sendStatus(500);
+    }
+    
 }
