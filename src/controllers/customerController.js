@@ -83,7 +83,7 @@ export async function newCustomer(req, res){
         );
 
         if(invalidCpf.rowCount > 0){
-            return res.status(409).send('CLiente já cadastrado');
+            return res.status(409).send('Cliente já cadastrado');
         }
 
         //Insere o cliente no banco de dados
