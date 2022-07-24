@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import connection from '../dbStrategy/database.js';
 import { rentalSchema } from '../schemas/rentalSchema.js';
 
-export async function getRentals(req, res){
+export async function getRentals(req, res){ //FALTA O JOIN
 
     try {
 
@@ -43,7 +43,9 @@ export async function getRentals(req, res){
         }
 
         //sem filtro
-        const { rows: rentals } = await connection.query(`SELECT * FROM rentals`);
+        const { rows: rentals } = await connection.query(`
+            SELECT * FROM rentals`
+        );
 
         res.status(200).send(rentals);
 
@@ -53,7 +55,7 @@ export async function getRentals(req, res){
     }
 }
 
-export async function newRental(req, res){
+export async function newRental(req, res){ //FALTA VALIDAR ESTOQUE DE JOGOS
 
     try {
 
@@ -92,7 +94,7 @@ export async function newRental(req, res){
         //validar se existem jogos no estoque no momento
 
 
-        //inserir aluguel no banco de dados
+        //inserir aluguel no banco de dados com dados extras
         const originalPrice = gameExists[0].pricePerDay * daysRented;
         const rentDate = dayjs().format('YYYY-MM-DD');
         const returnDate = null;
@@ -117,6 +119,56 @@ export async function returnRental(req, res){
 
     try {
 
+        const rentalId = req.params.id;
+
+        const { rows: rentalData } = await connection.query(`
+            SELECT * FROM rentals
+            WHERE id= $1`,
+            [rentalId]
+        );
+
+        //verifica se o aluguel existe
+        if(rentalData.length === 0){
+            return res.status(404).send('Aluguel não existe');
+        }
+
+        //verifica se o aluguel já foi finalizado
+        if(rentalData[0].returnDate){
+            return res.status(400).send('Aluguel já finalizado');
+        }
+
+        //cálculo dos dias de atraso
+        let delayFee = 0;
+        const today = dayjs().format('YYYY-MM-DD');
+        const DAY_IN_MILI = 1000 * 60 * 60 * 24;
+        const daysBetween = (Date.now() - rentalData[0].rentDate.getTime())/(DAY_IN_MILI);
+        const daysDelay = daysBetween - rentalData[0].daysRented;
+
+        //caso esteja atrasado, calcula a taxa de atraso
+        if(daysDelay > 0){
+            const gameId = rentalData[0].gameId;
+
+            const { rows: game } = await connection.query(`
+                SELECT "pricePerDay" FROM games
+                WHERE id= $1`,
+                [gameId]
+            );
+
+            delayFee = daysDelay * game[0].pricePerDay;
+
+        }
+        
+        //update da finalização do aluguel
+        await connection.query(`
+            UPDATE rentals
+            SET "returnDate"= $1,
+            "delayFee"= $2
+            WHERE id= $3`,
+            [today, delayFee, rentalId]
+        );
+
+        res.sendStatus(200);
+
     } catch (error) {
         console.log(error);
         res.sendStatus(500);
@@ -127,6 +179,33 @@ export async function returnRental(req, res){
 export async function deleteRental(req, res){
     
     try {
+
+        const rentalId = req.params.id;
+
+        const { rows: rentalExists } = await connection.query(`
+            SELECT * FROM rentals
+            WHERE id= $1`,
+            [rentalId]
+        );
+
+        //validar se o aluguel existe
+        if(rentalExists.length === 0){
+            return res.status(404).send('Aluguel não existe');
+        }
+
+        //validar se o aluguel já foi finalizado
+        if(!rentalExists[0].returnDate){
+            return res.status(400).send('Aluguel ainda não foi finalizado');
+        }
+
+        //deletar aluguel do banco de dados
+        await connection.query(`
+            DELETE FROM rentals
+            WHERE id= $1`,
+            [rentalId]
+        );
+
+        res.sendStatus(200);
 
     } catch (error) {
         console.log(error);
