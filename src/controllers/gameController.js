@@ -66,7 +66,7 @@ export async function getGames(req, res){
                 JOIN categories
                 ON games."categoryId" = categories.id
                 WHERE games.name
-                ILIKE $1 || '%'`,
+                LIKE $1 || '%'`,
                 [filter]
             );
         
