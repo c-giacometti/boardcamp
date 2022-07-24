@@ -91,8 +91,17 @@ export async function newRental(req, res){ //FALTA VALIDAR ESTOQUE DE JOGOS
             return res.status(400).send('Jogo não existe');
         }
 
-        //validar se existem jogos no estoque no momento
+        //validar se existem jogos disponíveis no estoque no momento
+        const { rows: avaiableGames } = await connection.query(`
+            SELECT * FROM rentals
+            WHERE "gameId"= $1
+            AND "returnDate" IS NULL`,
+            [gameId]
+        );
 
+        if(avaiableGames.length >= gameExists[0].stockTotal){
+            return res.status(400).send('Não há jogos disponíveis em estoque no momento');
+        }
 
         //inserir aluguel no banco de dados com dados extras
         const originalPrice = gameExists[0].pricePerDay * daysRented;
