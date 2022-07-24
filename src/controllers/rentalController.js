@@ -7,85 +7,7 @@ export async function getRentals(req, res){
     try {
 
         const { customerId, gameId } = req.query;
-
-        //filtrar por customerId e gameId
-        if(customerId && gameId){
-            const { rows: rentals } = await connection.query(`
-                SELECT rentals.*,
-                json_build_object(
-                    'id', customers.id,
-                    'name', customers.name
-                ) AS customer,
-                json_build_object(
-                    'id', games.id,
-                    'name', games.name,
-                    'categoryId', games."categoryId",
-                    'categoryName', categories.name
-                ) AS game
-                FROM rentals
-                JOIN customers ON rentals."customerId" = customers.id
-                JOIN games ON rentals."gameId" = games.id
-                JOIN categories ON games."categoryId" = categories.id
-                WHERE "customerId"= $1
-                AND "gameId"= $2`,
-                [customerId, gameId]
-            );
-
-            return res.status(200).send(rentals);
-        }
-
-        //filtrar por customerId
-        if(customerId){
-            const { rows: rentals } = await connection.query(`
-                SELECT rentals.*,
-                json_build_object(
-                    'id', customers.id,
-                    'name', customers.name
-                ) AS customer,
-                json_build_object(
-                    'id', games.id,
-                    'name', games.name,
-                    'categoryId', games."categoryId",
-                    'categoryName', categories.name
-                ) AS game
-                FROM rentals
-                JOIN customers ON rentals."customerId" = customers.id
-                JOIN games ON rentals."gameId" = games.id
-                JOIN categories ON games."categoryId" = categories.id
-                WHERE "customerId"= $1`,
-                [customerId]
-            );
-
-            return res.status(200).send(rentals);
-        }
-
-        //filtrar por gameId
-        if(gameId){
-            const { rows: rentals } = await connection.query(`
-                SELECT rentals.*,
-                json_build_object(
-                    'id', customers.id,
-                    'name', customers.name
-                ) AS customer,
-                json_build_object(
-                    'id', games.id,
-                    'name', games.name,
-                    'categoryId', games."categoryId",
-                    'categoryName', categories.name
-                ) AS game
-                FROM rentals
-                JOIN customers ON rentals."customerId" = customers.id
-                JOIN games ON rentals."gameId" = games.id
-                JOIN categories ON games."categoryId" = categories.id
-                WHERE "gameId"= $1`,
-                [gameId]
-            );
-
-            return res.status(200).send(rentals);
-        }
-
-        //sem filtro
-        const { rows: rentals } = await connection.query(`
+        const defaultQuery = `
             SELECT rentals.*,
             json_build_object(
                 'id', customers.id,
@@ -100,8 +22,42 @@ export async function getRentals(req, res){
             FROM rentals
             JOIN customers ON rentals."customerId" = customers.id
             JOIN games ON rentals."gameId" = games.id
-            JOIN categories ON games."categoryId" = categories.id`
-        );
+            JOIN categories ON games."categoryId" = categories.id
+        `
+
+        //filtrar por customerId e gameId
+        if(customerId && gameId){
+            const { rows: rentals } = await connection.query(defaultQuery + 
+                `WHERE "customerId"= $1
+                AND "gameId"= $2`,
+                [customerId, gameId]
+            );
+
+            return res.status(200).send(rentals);
+        }
+
+        //filtrar por customerId
+        if(customerId){
+            const { rows: rentals } = await connection.query(defaultQuery + 
+                `WHERE "customerId"= $1`,
+                [customerId]
+            );
+
+            return res.status(200).send(rentals);
+        }
+
+        //filtrar por gameId
+        if(gameId){
+            const { rows: rentals } = await connection.query(defaultQuery + 
+                `WHERE "gameId"= $1`,
+                [gameId]
+            );
+
+            return res.status(200).send(rentals);
+        }
+
+        //sem filtro
+        const { rows: rentals } = await connection.query(defaultQuery);
 
         res.status(200).send(rentals);
 
