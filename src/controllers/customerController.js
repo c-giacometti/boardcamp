@@ -50,7 +50,7 @@ export async function getCustomerById(req, res){
             return res.status(404).send('Usuário não encontrado');
         }
 
-        res.status(200).send(customer);
+        res.status(200).send(customer[0]);
 
     } catch(error) {
 

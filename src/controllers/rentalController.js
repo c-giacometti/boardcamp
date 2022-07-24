@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import connection from '../dbStrategy/database.js';
 import { rentalSchema } from '../schemas/rentalSchema.js';
 
-export async function getRentals(req, res){ //FALTA O JOIN
+export async function getRentals(req, res){
 
     try {
 
@@ -11,7 +11,21 @@ export async function getRentals(req, res){ //FALTA O JOIN
         //filtrar por customerId e gameId
         if(customerId && gameId){
             const { rows: rentals } = await connection.query(`
-                SELECT * FROM rentals
+                SELECT rentals.*,
+                json_build_object(
+                    'id', customers.id,
+                    'name', customers.name
+                ) AS customer,
+                json_build_object(
+                    'id', games.id,
+                    'name', games.name,
+                    'categoryId', games."categoryId",
+                    'categoryName', categories.name
+                ) AS game
+                FROM rentals
+                JOIN customers ON rentals."customerId" = customers.id
+                JOIN games ON rentals."gameId" = games.id
+                JOIN categories ON games."categoryId" = categories.id
                 WHERE "customerId"= $1
                 AND "gameId"= $2`,
                 [customerId, gameId]
@@ -23,7 +37,21 @@ export async function getRentals(req, res){ //FALTA O JOIN
         //filtrar por customerId
         if(customerId){
             const { rows: rentals } = await connection.query(`
-                SELECT * FROM rentals
+                SELECT rentals.*,
+                json_build_object(
+                    'id', customers.id,
+                    'name', customers.name
+                ) AS customer,
+                json_build_object(
+                    'id', games.id,
+                    'name', games.name,
+                    'categoryId', games."categoryId",
+                    'categoryName', categories.name
+                ) AS game
+                FROM rentals
+                JOIN customers ON rentals."customerId" = customers.id
+                JOIN games ON rentals."gameId" = games.id
+                JOIN categories ON games."categoryId" = categories.id
                 WHERE "customerId"= $1`,
                 [customerId]
             );
@@ -34,7 +62,21 @@ export async function getRentals(req, res){ //FALTA O JOIN
         //filtrar por gameId
         if(gameId){
             const { rows: rentals } = await connection.query(`
-                SELECT * FROM rentals
+                SELECT rentals.*,
+                json_build_object(
+                    'id', customers.id,
+                    'name', customers.name
+                ) AS customer,
+                json_build_object(
+                    'id', games.id,
+                    'name', games.name,
+                    'categoryId', games."categoryId",
+                    'categoryName', categories.name
+                ) AS game
+                FROM rentals
+                JOIN customers ON rentals."customerId" = customers.id
+                JOIN games ON rentals."gameId" = games.id
+                JOIN categories ON games."categoryId" = categories.id
                 WHERE "gameId"= $1`,
                 [gameId]
             );
@@ -44,7 +86,21 @@ export async function getRentals(req, res){ //FALTA O JOIN
 
         //sem filtro
         const { rows: rentals } = await connection.query(`
-            SELECT * FROM rentals`
+            SELECT rentals.*,
+            json_build_object(
+                'id', customers.id,
+                'name', customers.name
+            ) AS customer,
+            json_build_object(
+                'id', games.id,
+                'name', games.name,
+                'categoryId', games."categoryId",
+                'categoryName', categories.name
+            ) AS game
+            FROM rentals
+            JOIN customers ON rentals."customerId" = customers.id
+            JOIN games ON rentals."gameId" = games.id
+            JOIN categories ON games."categoryId" = categories.id`
         );
 
         res.status(200).send(rentals);
@@ -55,7 +111,7 @@ export async function getRentals(req, res){ //FALTA O JOIN
     }
 }
 
-export async function newRental(req, res){ //FALTA VALIDAR ESTOQUE DE JOGOS
+export async function newRental(req, res){ 
 
     try {
 
